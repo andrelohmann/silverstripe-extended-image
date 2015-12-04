@@ -1,0 +1,20 @@
+{
+	"name": "andrelohmann-silverstripe/extended-image",
+	"type": "silverstripe-module",
+	"description": "Extends the Image Object with some more Methods and adds a SecureImage for md5 hashed file names.",
+	"license": "BSD-3-Clause",
+	"keywords": ["silverstripe", "framework"],
+	"authors": [
+		{
+			"name": "Andre Lohmann",
+			"homepage": "https://github.com/andrelohmann"
+		}
+	],
+	"require": {
+		"php": ">=5.3.2",
+		"composer/installers": "*",
+		"andrelohmann-silverstripe/extended-file": "1.*",
+		"andrelohmann/php-facedetection": "0.1.*"
+	},
+	"minimum-stability": "stable"
+}
