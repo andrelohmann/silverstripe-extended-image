@@ -1,0 +1,9 @@
+name: extended-image
+---
+Image:
+  extensions:
+    - ExtendedImage
+
+GDBackend:
+  extensions:
+    - ExtendedGDBackend
