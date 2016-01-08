@@ -137,4 +137,30 @@ class ExtendedGDBackend extends DataExtension {
 		$output->setImageResource($this->owner->getImageResource());
 		return $output;
 	}
+
+	/**
+	 * convert to jpeg
+	 */
+	public function toJpeg($backgroundColor, $type) {
+		$image = $this->owner->getImageResource();
+
+		switch($type){
+			case IMAGETYPE_GIF:
+			case IMAGETYPE_PNG:
+				$newGD = imagecreatetruecolor($this->owner->getWidth(), $this->owner->getHeight());
+				$bg = GDBackend::color_web2gd($newGD, $backgroundColor);
+                imagefill($newGD, 0, 0, $bg);
+                imagealphablending($newGD, TRUE);
+                imagecopy($newGD, $image, 0, 0, 0, 0, $this->owner->getWidth(), $this->owner->getHeight());
+			break;
+
+			case IMAGETYPE_JPEG:
+				$newGD = $image;
+			break;
+		}
+
+		$output = clone $this->owner;
+		$output->setImageResource($newGD);
+		return $output;
+	}
 }
