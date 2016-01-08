@@ -7,3 +7,7 @@ Image:
 GDBackend:
   extensions:
     - ExtendedGDBackend
+
+ExtendedImage:
+  get_jpeg_default_quality: 75
+  get_jpeg_default_background_color: 'FFFFFF'

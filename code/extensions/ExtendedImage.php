@@ -10,6 +10,18 @@
  
 class ExtendedImage extends DataExtension {
 
+	/**
+	 * @config
+	 * @var integer
+	 */
+	private static $get_jpeg_default_quality = 75;
+
+	/**
+	 * @config
+	 * @var integer
+	 */
+	private static $get_jpeg_default_background_color = "FFFFFF";
+
         /**
          * Return an XHTML img tag for this Image.
          * @return string
@@ -45,12 +57,23 @@ class ExtendedImage extends DataExtension {
                 return "data:image/".$type.";base64,".$Base64Image;
         }
 		
+		/**
+		 * Detect a Face inside the image
+		 *
+		 * returns null or an Array with x, y coordinates and w = width/height (square)
+		 * @return Array
+		 */
 		public function DetectFace(){
 			$detector = new svay\FaceDetector();
 			$detector->faceDetect($this->owner->getFullPath());
 			return $detector->getFace();
 		}
-		
+
+		/**
+		 * returns the image with the face marked in a red square
+		 *
+		 * @return Image_Cached|SecureImage_Cached
+		 */
 		public function DetectedFace(){
 			if($this->owner->exists()) {
 				$cacheFile = $this->owner->cacheDetectedFaceFilename();
@@ -59,13 +82,13 @@ class ExtendedImage extends DataExtension {
 					$this->owner->generateDetectedFaceImage();
 				}
 				
-				if(get_class($this->owner) == 'SecureImage') $cached = new SecureImage_Cached($cacheFile);
+				if($this->owner instanceof SecureImage) $cached = new SecureImage_Cached($cacheFile);
 				else $cached = new Image_Cached($cacheFile);
 
 				// Pass through the title so the templates can use it
-				$cached->owner->Title = $this->owner->Title;
-				$cached->owner->ID = $this->owner->ID;
-				$cached->owner->ParentID = $this->owner->ParentID;
+				$cached->Title = $this->owner->Title;
+				$cached->ID = $this->owner->ID;
+				$cached->ParentID = $this->owner->ParentID;
 				return $cached;
 			}
 		}
@@ -79,7 +102,7 @@ class ExtendedImage extends DataExtension {
 
 			$format = 'DetectedFace';
 
-			if(get_class($this->owner) == 'SecureImage'){
+			if($this->owner instanceof SecureImage){
 				$file = pathinfo($this->owner->Name);
 				return $folder . "_resampled/".md5($format."-".$file['filename']).".".$file['extension'];
 			}else{
@@ -131,8 +154,8 @@ class ExtendedImage extends DataExtension {
         
         /**
          * Merge the Image onto anotherone fitting it with a min padding
-         * @param type $padding
          * @param type $backgroundimage
+		 * @param type $padding
          */
 		public function MergeOver($backgroundimage, $padding = 10) {
             return $this->owner->getMergedImage($format = 'over', $padding, $backgroundimage);
@@ -140,8 +163,8 @@ class ExtendedImage extends DataExtension {
         
         /**
          * use the current Image as a background for the merging image
-         * @param type $padding
          * @param type $overlayimage
+		 * @param type $padding
          */
 		public function MergeUnder($overlayimage, $padding = 10) {
             return $this->owner->getMergedImage($format = 'under', $padding, $overlayimage);
@@ -149,7 +172,8 @@ class ExtendedImage extends DataExtension {
         
         /**
          * Return an image object representing the merged image.
-         * @param type $padding
+		 * @param type $format
+		 * @param type $padding
          * @param type $mergeimage
 		 * @return Image_Cached
          */
@@ -164,13 +188,13 @@ class ExtendedImage extends DataExtension {
                     else $this->owner->generateMergedImage($padding, $this->owner->getFullPath(), $mergeimage, $cacheFile);
 				}
                 
-                if(get_class($this->owner) == 'SecureImage') $cached = new SecureImage_Cached($cacheFile);
+                if($this->owner instanceof SecureImage) $cached = new SecureImage_Cached($cacheFile);
                 else $cached = new Image_Cached($cacheFile);
                 
 				// Pass through the title so the templates can use it
-				$cached->owner->Title = $this->owner->Title;
-                $cached->owner->ID = $this->owner->ID;
-                $cached->owner->ParentID = $this->owner->ParentID;
+				$cached->Title = $this->owner->Title;
+                $cached->ID = $this->owner->ID;
+                $cached->ParentID = $this->owner->ParentID;
 				return $cached;
             }
 		}
@@ -191,7 +215,7 @@ class ExtendedImage extends DataExtension {
 				$image_pathinfo = pathinfo($this->owner->Filename);
 				$merge_pathinfo = pathinfo($mergedimage);
 
-				if(get_class($this->owner) == 'SecureImage'){
+				if($this->owner instanceof SecureImage){
 					$file = pathinfo($this->owner->Name);
 					if(strtolower($image_pathinfo['extension']) == 'png' || strtolower($merge_pathinfo['extension']) == 'png'){
 						$mergedName = $folder . "_resampled/".md5($format."-".$file['filename']).".".$file['extension'];
@@ -212,13 +236,7 @@ class ExtendedImage extends DataExtension {
 		}
 	
 		/**
-		 * Generate an image on the specified format. It will save the image
-		 * at the location specified by cacheFilename(). The image will be generated
-		 * using the specific 'generate' method for the specified format.
-		 * @param string $format Name of the format to generate.
-		 * @param string $arg1 Argument to pass to the generate method.
-		 * @param string $arg2 A second argument to pass to the generate method.
-		 * @param string $background Background-Color of the resized Image
+		 * genereate the merged image
 		 */
 		public function generateMergedImage($padding, $bgImagePath, $overlayImagePath, $cacheFile){
 
@@ -239,8 +257,8 @@ class ExtendedImage extends DataExtension {
         
         /**
          * Resize this Image by both width and height with transparent Background, using padded resize. Use in templates with $transparentPad.
-         * @param type $widthheight separated by ":"
-         * @param type $background
+         * @param type $width
+         * @param type $height
          */
         public function TransparentPad($width, $height){
 			return (($this->owner->getWidth() == $width) &&  ($this->owner->getHeight() == $height)) 
@@ -255,7 +273,6 @@ class ExtendedImage extends DataExtension {
 		 * @param string $format The name of the format.
 		 * @param string $arg1 An argument to pass to the generate function.
 		 * @param string $arg2 A second argument to pass to the generate function.
-		 * @param string $background Background-Color of the resized Image
 		 * @return Image_Cached
 		 */
 		public function getTransparentFormattedImage($format, $arg1 = null, $arg2 = null) {
@@ -266,13 +283,13 @@ class ExtendedImage extends DataExtension {
 					$this->owner->generateTransparentFormattedImage($format, $arg1, $arg2);
 				}
 				
-				if(get_class($this->owner) == 'SecureImage') $cached = new SecureImage_Cached($cacheFile);
+				if($this->owner instanceof SecureImage) $cached = new SecureImage_Cached($cacheFile);
 				else $cached = new Image_Cached($cacheFile);
 
 				// Pass through the title so the templates can use it
-				$cached->owner->Title = $this->owner->Title;
-				$cached->owner->ID = $this->owner->ID;
-				$cached->owner->ParentID = $this->owner->ParentID;
+				$cached->Title = $this->owner->Title;
+				$cached->ID = $this->owner->ID;
+				$cached->ParentID = $this->owner->ParentID;
 				return $cached;
 			}
 		}
@@ -289,7 +306,7 @@ class ExtendedImage extends DataExtension {
 
 			$format = $format.$arg1.$arg2;
 
-			if(get_class($this->owner) == 'SecureImage'){
+			if($this->owner instanceof SecureImage){
 				$file = pathinfo($this->owner->Name);
 				return $folder . "_resampled/".md5($format."-".$file['filename']).".".$file['extension'];
 			}else{
@@ -359,13 +376,13 @@ class ExtendedImage extends DataExtension {
                     $this->owner->generateBluredImage($intensity);
 				}
                 
-                if(get_class($this->owner) == 'SecureImage') $cached = new SecureImage_Cached($cacheFile);
+                if($this->owner instanceof SecureImage) $cached = new SecureImage_Cached($cacheFile);
                 else $cached = new Image_Cached($cacheFile);
                 
 				// Pass through the title so the templates can use it
-				$cached->owner->Title = $this->owner->Title;
-                $cached->owner->ID = $this->owner->ID;
-                $cached->owner->ParentID = $this->owner->ParentID;
+				$cached->Title = $this->owner->Title;
+                $cached->ID = $this->owner->ID;
+                $cached->ParentID = $this->owner->ParentID;
 				return $cached;
             }
         }
@@ -379,29 +396,114 @@ class ExtendedImage extends DataExtension {
 			
 			$format = 'blured-'.$intensity;
 			
-			if(get_class($this->owner) == 'SecureImage'){
+			if($this->owner instanceof SecureImage){
 				$file = pathinfo($this->owner->Name);
 				return $folder . "_resampled/".md5($format."-".$file['filename']).".".$file['extension'];
 			}else{
 				return $folder . "_resampled/".$format."-".$this->owner->Name;
 			}
 		}
-        
-		/**
-		 * Generate an image on the specified format. It will save the image
-		 * at the location specified by cacheFilename(). The image will be generated
-		 * using the specific 'generate' method for the specified format.
-		 */
-		public function generateBluredImage($intensity){
-				$cacheFile = $this->owner->cacheBluredFilename($intensity);
 
-				$backend = Injector::inst()->createWithArgs(Image::get_backend(), array(
-					Director::baseFolder()."/" . $this->owner->Filename
-				));
+	/**
+	 * Generate an image on the specified format. It will save the image
+	 * at the location specified by cacheFilename(). The image will be generated
+	 * using the specific 'generate' method for the specified format.
+	 */
+	public function generateBluredImage($intensity){
+		$cacheFile = $this->owner->cacheBluredFilename($intensity);
 
-				$backend = $backend->blur($intensity);
-				if($backend){
-					$backend->writeTo(Director::baseFolder()."/" . $cacheFile);
-				}
+		$backend = Injector::inst()->createWithArgs(Image::get_backend(), array(
+			Director::baseFolder()."/" . $this->owner->Filename
+		));
+
+		$backend = $backend->blur($intensity);
+		if($backend){
+			$backend->writeTo(Director::baseFolder()."/" . $cacheFile);
 		}
+	}
+
+	/**
+	 * Generate a jpeg image from the source
+	 *
+	 * set quality and backgroundColor for Transparency
+	 *
+	 * @param $quality
+	 * @param $backgroundColor
+	 */
+	public function ToJPEG($quality = null, $backgroundColor = null)
+	{
+        if (!$quality) $quality = Config::inst()->get('ExtendedImage', 'get_jpeg_default_quality');
+		if (!$backgroundColor) $backgroundColor = Config::inst()->get('ExtendedImage', 'get_jpeg_default_background_color');
+
+		return $this->owner->getJPEGImage($quality, $backgroundColor);
+
+	}
+
+	/**
+	 * Return an image object representing the blured image.
+	 * @return Image_Cached
+	 */
+	public function getJPEGImage($quality, $backgroundColor){
+
+        if($this->owner->exists()) {
+
+            $pathinfo = pathinfo($this->owner->Name);
+
+            $cacheFile = $this->owner->cacheToJPEGFilename($quality, $backgroundColor, $pathinfo);
+
+            list($width, $height, $type, $attr) = getimagesize($this->owner->getFullPath());
+
+
+            if($type == IMAGETYPE_JPEG && $quality == 100) return $this->owner;
+
+            if(!file_exists(Director::baseFolder()."/".$cacheFile) || isset($_GET['flush'])) {
+                // convert the current file to jpeg
+                $this->owner->generateToJPEGImage($quality, $backgroundColor, $pathinfo, $type);
+            }
+
+			if($this->owner instanceof SecureImage) $cached = new SecureImage_Cached($cacheFile);
+			else $cached = new Image_Cached($cacheFile);
+
+			// Pass through the title so the templates can use it
+			$cached->Title = $this->owner->Title;
+			$cached->ID = $this->owner->ID;
+			$cached->ParentID = $this->owner->ParentID;
+			return $cached;
+		}
+	}
+
+	/**
+	 * Return the filename for the cached image.
+	 * @return string
+	 */
+	public function cacheToJPEGFilename($quality, $backgroundColor, $pathinfo) {
+		$folder = $this->owner->ParentID ? $this->owner->Parent()->Filename : ASSETS_DIR . "/";
+
+		$format = $pathinfo['extension'].'tojpeg-'.$quality.'-'.$backgroundColor;
+
+		if($this->owner instanceof SecureImage){
+			return $folder . "_resampled/".md5($format."-".$pathinfo['filename']).".jpg";
+		}else{
+			return $folder . "_resampled/".$format."-".$pathinfo['filename'].".jpg";
+		}
+	}
+
+    /**
+     * Generate an image on the specified format. It will save the image
+     * at the location specified by cacheFilename(). The image will be generated
+     * using the specific 'generate' method for the specified format.
+     */
+    public function generateToJPEGImage($quality, $backgroundColor, $pathinfo, $type){
+        $cacheFile = $this->owner->cacheToJPEGFilename($quality, $backgroundColor, $pathinfo);
+
+        $backend = Injector::inst()->createWithArgs(Image::get_backend(), array(
+            Director::baseFolder()."/" . $this->owner->Filename
+        ));
+
+        $backend = $backend->toJpeg($backgroundColor, $type);
+        if($backend){
+            $backend->setQuality($quality);
+            $backend->writeTo(Director::baseFolder()."/" . $cacheFile);
+        }
+    }
 }
